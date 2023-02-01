@@ -9,61 +9,82 @@
   elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {  //default
     echo '
     <!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title></title>
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
-  <script>
-  function sendData() {
-    $username = document.getElementById(3).value;
-    $password = document.getElementById(5).value;
-    var xhttp = new XMLHttpRequest();
-    xhttp.onreadystatechange = function() {
-      if (this.readyState == 4 && this.status == 201) {  //login correct
-        $("#login").remove();
-        document.getElementById("main").innerHTML += this.response;
-        }
-
-      if (this.readyState == 4 && this.status == 200) {
-        $("#wrongpw").remove();
-        document.getElementById("main").innerHTML += "<p id=wrongpw>"+this.response+"</p>";
-
-        }
-    };
-    xhttp.open("POST", "todo.php", true);
-    xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-    xhttp.send("user="+$username+"&pwd="+$password);
-  }
-  function sendtodo() {
-             $todo = document.getElementById("todo_field").value;
-             var xhttp = new XMLHttpRequest();
-             xhttp.onreadystatechange = function() {
-              if (this.readyState == 4 && this.status == 200) {
-                document.getElementById("main").innerHTML += this.response;
-                }
-          
-            };
-             xhttp.open("POST", "todo.php", true);
-             xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-             xhttp.send("todo="+$todo);
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title></title>
+      <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+      <script>
+      function login() {
+        $username = document.getElementById(3).value;
+        $password = document.getElementById(5).value;
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+          if (this.readyState == 4 && this.status == 201) {  //login correct
+            $("#login").remove();
+            document.getElementById("main").innerHTML += this.response;
+            }
+    
+          if (this.readyState == 4 && this.status == 200) {
+            $("#wrongpw").remove();
+            document.getElementById("1").innerHTML += "<p id=wrongpw>"+this.response+"</p>";
+    
+            }
+        };
+        xhttp.open("POST", "todo.php", true);
+        xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+        xhttp.send("user="+$username+"&pwd="+$password);
+      }
+    
+      function deltodo(todo_id) {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+          if (this.readyState == 4 && this.status == 200) {
+            $("#"+todo_id).remove();
+            document.write("im not working");
           }
-  </script>
-</head>
-<body>
-<div id="main">
-    <div id="login">
-        <label id="2">Username</label>
-        <input id="3" type="text" placeholder="Enter Username">
-
-        <label id="4">Password</label>
-        <input id="5" type="password" placeholder="Enter Password">
-        <button id="6" type="submit" onclick="sendData()">Login</button>
+        };
+        xhttp.open("POST", "todo.php", true);
+        xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+        xhttp.send("deltodo="+todo_id);
+      
+      
+      }
+    
+    
+      function sendtodo() {
+                 $todo = document.getElementById("todo_field").value;
+                 var xhttp = new XMLHttpRequest();
+                 xhttp.onreadystatechange = function() {
+                  if (this.readyState == 4 && this.status == 200) {
+                    document.getElementById("main").innerHTML += this.response;
+                    }
+              
+                };
+                 xhttp.open("POST", "todo.php", true);
+                 xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+                 xhttp.send("todo="+$todo);
+              }
+      </script>
+    </head>
+    <body>
+    <div id="main">
+        <div id="login">
+            <label id="2">Username</label>
+            <input id="3" type="text" placeholder="Enter Username">
+    
+            <label id="4">Password</label>
+            <input id="5" type="password" placeholder="Enter Password">
+            <button id="6" type="submit" onclick="login()">Login</button>
+        </div>
     </div>
-</div>
-</body>
-</html>
+    </body>
+    </html>
+    
+    
+    
+    
 ';
 }
 
@@ -102,8 +123,8 @@ if(isset($_POST['user'])){
           </div>';
 
           while ($row = $result->fetch_assoc()) {
-            echo $row['todo'];
-            echo '<button type="submit" onclick="del_todo('.$row['id'].')">Logout</button>';
+            echo '<p id='.$row['id'].'>'.$row['todo'].'</p>';
+            echo '<button type="submit" onclick="deltodo('.$row['id'].')">Logout</button>';
             echo '<br>';
           }
       }
@@ -121,8 +142,15 @@ if(isset($_POST['todo']) and isset($_SESSION['username'])){
   $stmt= $con->prepare($sql_query);
   $stmt->bind_param("is", $user_id, $todo);
   $stmt->execute();
-  echo 'i reveived '.$todo;
+}
 
+if(isset($_POST['deltodo']) and isset($_SESSION['username'])){
+  $todo_id = $_POST['deltodo'];
+  $sql_query = "DELETE FROM todo_table WHERE id=?";
+  $stmt= $con->prepare($sql_query);
+  $stmt->bind_param("i", $todo_id);
+  $stmt->execute();
+  header("HTTP/1.1 201 OK");
 }
 ?>
 
