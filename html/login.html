@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title></title>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+  <script>
+  function sendData() {
+    $username = document.getElementById(3).value;
+    $password = document.getElementById(5).value;
+    var xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function() {
+      if (this.readyState == 4 && this.status == 201) {  //login correct
+        $("#login").remove();
+        document.getElementById("main").innerHTML += this.response;
+        }
+
+      if (this.readyState == 4 && this.status == 200) {
+        $("#wrongpw").remove();
+        document.getElementById("1").innerHTML += "<p id=wrongpw>"+this.response+"</p>";
+
+        }
+    };
+    xhttp.open("POST", "todo.php", true);
+    xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+    xhttp.send("user="+$username+"&pwd="+$password);
+  }
+  function sendtodo() {
+             $todo = document.getElementById("todo_field").value;
+             var xhttp = new XMLHttpRequest();
+             xhttp.onreadystatechange = function() {
+              if (this.readyState == 4 && this.status == 200) {
+                document.getElementById("main").innerHTML += this.response;
+                }
+          
+            };
+             xhttp.open("POST", "todo.php", true);
+             xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+             xhttp.send("todo="+$todo);
+          }
+  </script>
+</head>
+<body>
+<div id="main">
+    <div id="login">
+        <label id="2">Username</label>
+        <input id="3" type="text" placeholder="Enter Username">
+
+        <label id="4">Password</label>
+        <input id="5" type="password" placeholder="Enter Password">
+        <button id="6" type="submit" onclick="sendData()">Login</button>
+    </div>
+</div>
+</body>
+</html>
+
+
+
