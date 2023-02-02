@@ -1,13 +1,13 @@
 <?php
-  session_start();
-  include 'inc/db.php';
+session_start();
+include 'inc/db.php';
 
 
-  if (isset($_SESSION['username']) and $_SERVER['REQUEST_METHOD'] === 'GET') { // Fallback if page is reloaded
-    echo "Herzlich Willkommen ".$_SESSION['user_id'];
-  } 
-  elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {  //default
-    echo '
+if (isset($_SESSION['username']) and $_SERVER['REQUEST_METHOD'] === 'GET') { // Fallback if page is reloaded
+  echo "Herzlich Willkommen ".$_SESSION['user_id'];
+} 
+elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {  //default
+?>
     <!DOCTYPE html>
     <html>
     <head>
@@ -25,24 +25,23 @@
             $("#login").remove();
             document.getElementById("main").innerHTML += this.response;
             }
-    
+
           if (this.readyState == 4 && this.status == 200) {
             $("#wrongpw").remove();
             document.getElementById("1").innerHTML += "<p id=wrongpw>"+this.response+"</p>";
-    
+
             }
         };
         xhttp.open("POST", "todo.php", true);
         xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
         xhttp.send("user="+$username+"&pwd="+$password);
       }
-    
+
       function deltodo(todo_id) {
         var xhttp = new XMLHttpRequest();
         xhttp.onreadystatechange = function() {
-          if (this.readyState == 4 && this.status == 200) {
+          if (this.readyState == 4 && this.status == 201) {
             $("#"+todo_id).remove();
-            document.write("im not working");
           }
         };
         xhttp.open("POST", "todo.php", true);
@@ -51,21 +50,21 @@
       
       
       }
-    
-    
       function sendtodo() {
-                 $todo = document.getElementById("todo_field").value;
-                 var xhttp = new XMLHttpRequest();
-                 xhttp.onreadystatechange = function() {
-                  if (this.readyState == 4 && this.status == 200) {
-                    document.getElementById("main").innerHTML += this.response;
-                    }
-              
-                };
-                 xhttp.open("POST", "todo.php", true);
-                 xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-                 xhttp.send("todo="+$todo);
+          $todo = document.getElementById("todo_field").value;
+          var xhttp = new XMLHttpRequest();
+          xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+              $user_id = this.response;
+              $todo_id = 
+              document.getElementById("main").innerHTML += '<div id='+$user_id+'> <button type="submit" onclick="deltodo('+$user_id+')">X</button> <p style="display: inline;">'+$todo+'</p> </div>';
               }
+        
+          };
+          xhttp.open("POST", "todo.php", true);
+          xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+          xhttp.send("todo="+$todo);
+        }
       </script>
     </head>
     <body>
@@ -73,7 +72,7 @@
         <div id="login">
             <label id="2">Username</label>
             <input id="3" type="text" placeholder="Enter Username">
-    
+
             <label id="4">Password</label>
             <input id="5" type="password" placeholder="Enter Password">
             <button id="6" type="submit" onclick="login()">Login</button>
@@ -81,11 +80,7 @@
     </div>
     </body>
     </html>
-    
-    
-    
-    
-';
+<?php
 }
 
 if(isset($_POST['user'])){
@@ -123,9 +118,10 @@ if(isset($_POST['user'])){
           </div>';
 
           while ($row = $result->fetch_assoc()) {
-            echo '<p id='.$row['id'].'>'.$row['todo'].'</p>';
-            echo '<button type="submit" onclick="deltodo('.$row['id'].')">Logout</button>';
-            echo '<br>';
+            echo '<div id='.$row['id'].'>';
+            echo '<button type="submit" onclick="deltodo('.$row['id'].')">X</button>';
+            echo '<p style="display: inline;">'.$row['todo'].'</p>';
+            echo '</div>';
           }
       }
       else{
@@ -137,11 +133,16 @@ if(isset($_POST['user'])){
 
 if(isset($_POST['todo']) and isset($_SESSION['username'])){
   $todo = $_POST['todo'];
-  $user_id = $_SESSION['user_id'];
-  $sql_query = "INSERT INTO todo_table(UserId, todo) VALUES (?,?)";
-  $stmt= $con->prepare($sql_query);
+  $user_id = strval($_SESSION['user_id']);
+  $sql_insert = "INSERT INTO todo_table(UserId, todo) VALUES (?,?)";
+  $sql_get_pkey = "SELECT LAST_INSERT_ID()";
+  $stmt= $con->prepare($sql_insert);
   $stmt->bind_param("is", $user_id, $todo);
   $stmt->execute();
+  $todo_id = $con->query($sql_get_pkey);
+  $todo_id= $todo_id->fetch_assoc();
+  $todo_id = $todo_id['LAST_INSERT_ID()'];
+  echo $user_id."|".$todo_id;  // return this as some actually usefull datatype JSON XML ? 
 }
 
 if(isset($_POST['deltodo']) and isset($_SESSION['username'])){
