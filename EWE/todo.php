@@ -55,9 +55,10 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {  //default
           var xhttp = new XMLHttpRequest();
           xhttp.onreadystatechange = function() {
             if (this.readyState == 4 && this.status == 200) {
-              $user_id = this.response;
-              $todo_id = 
-              document.getElementById("main").innerHTML += '<div id='+$user_id+'> <button type="submit" onclick="deltodo('+$user_id+')">X</button> <p style="display: inline;">'+$todo+'</p> </div>';
+              //$xml = $.parseXML(this.response);
+              //$todo_id = $xml.getElementsByTagName("todo_id");
+              $todo_id = this.response;
+              document.getElementById("main").innerHTML += '<div id='+$todo_id+'> <button type="submit" onclick="deltodo('+$todo_id+')">X</button> <p style="display: inline;">'+$todo+'</p> </div>';
               }
         
           };
@@ -142,7 +143,10 @@ if(isset($_POST['todo']) and isset($_SESSION['username'])){
   $todo_id = $con->query($sql_get_pkey);
   $todo_id= $todo_id->fetch_assoc();
   $todo_id = $todo_id['LAST_INSERT_ID()'];
-  echo $user_id."|".$todo_id;  // return this as some actually usefull datatype JSON XML ? 
+ // header('Content-Type: application/xml');
+  //$output = "<root><user_id>".$user_id."</user_id><todo_id>".$todo_id."</todo_id></root>";
+  //print ($output);
+  echo $todo_id;  // return this as some actually usefull datatype JSON XML ? 
 }
 
 if(isset($_POST['deltodo']) and isset($_SESSION['username'])){
