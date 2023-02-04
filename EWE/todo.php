@@ -6,7 +6,7 @@ include 'inc/db.php';
 if (isset($_SESSION['username']) and $_SERVER['REQUEST_METHOD'] === 'GET') { // Fallback if page is reloaded
   echo "Herzlich Willkommen ".$_SESSION['user_id'];
 } 
-elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {  //default
+elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {  
 ?>
     <!DOCTYPE html>
     <html>
