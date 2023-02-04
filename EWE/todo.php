@@ -16,19 +16,36 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {  //default
       <title></title>
       <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
       <script>
+
+      
+      function logout() {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+          if (this.readyState == 4 && this.status == 201) {
+            $("#todo_head").remove();
+            $("#todos").remove();
+            document.getElementById('login').style.display = 'block';
+          }
+        };
+        xhttp.open("POST", "todo.php", true);
+        xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+        xhttp.send("logout");
+      }
+
+      
       function login() {
         $username = document.getElementById(3).value;
         $password = document.getElementById(5).value;
         var xhttp = new XMLHttpRequest();
         xhttp.onreadystatechange = function() {
           if (this.readyState == 4 && this.status == 201) {  //login correct
-            $("#login").remove();
+            document.getElementById('login').style.display = 'none';
             document.getElementById("main").innerHTML += this.response;
             }
 
           if (this.readyState == 4 && this.status == 200) {
             $("#wrongpw").remove();
-            document.getElementById("1").innerHTML += "<p id=wrongpw>"+this.response+"</p>";
+            document.getElementById("login").innerHTML += "<p id=wrongpw>"+this.response+"</p>";
 
             }
         };
@@ -47,9 +64,22 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {  //default
         xhttp.open("POST", "todo.php", true);
         xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
         xhttp.send("deltodo="+todo_id);
-      
-      
       }
+
+      function delall() {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+          if (this.readyState == 4 && this.status == 201) {
+            $("#todos").remove();
+            document.getElementById("todo_head").innerHTML += '<div id="todos">'
+          }
+        };
+        xhttp.open("POST", "todo.php", true);
+        xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+        xhttp.send("delall");
+      }
+
+
       function sendtodo() {
           $todo = document.getElementById("todo_field").value;
           var xhttp = new XMLHttpRequest();
@@ -58,7 +88,7 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {  //default
               //$xml = $.parseXML(this.response);
               //$todo_id = $xml.getElementsByTagName("todo_id");
               $todo_id = this.response;
-              document.getElementById("main").innerHTML += '<div id='+$todo_id+'> <button type="submit" onclick="deltodo('+$todo_id+')">X</button> <p style="display: inline;">'+$todo+'</p> </div>';
+              document.getElementById("todos").innerHTML += '<div id='+$todo_id+'> <button type="submit" onclick="deltodo('+$todo_id+')">X</button> <p style="display: inline;">'+$todo+'</p> </div>';
               }
         
           };
@@ -78,6 +108,8 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {  //default
             <input id="5" type="password" placeholder="Enter Password">
             <button id="6" type="submit" onclick="login()">Login</button>
         </div>
+        
+
     </div>
     </body>
     </html>
@@ -110,13 +142,15 @@ if(isset($_POST['user'])){
           $result = $stmt->get_result();
           header("HTTP/1.1 201 OK");
           echo '
-          <div id="todo">
+          <div id="todo_head">
           <input id="todo_field" type="text" placeholder="To-DO eintragen">
           <button type="submit" onclick="sendtodo()">-></button>
           <br>
-          <button type="submit" onclick="deltodo()">alle TO-DOs loeschen</button>
+          <button type="submit" onclick="delall()">alle TO-DOs loeschen</button>
           <button type="submit" onclick="logout()">Logout</button>
-          </div>';
+          </div>
+          <div id="todos">'
+          ;
 
           while ($row = $result->fetch_assoc()) {
             echo '<div id='.$row['id'].'>';
@@ -124,6 +158,7 @@ if(isset($_POST['user'])){
             echo '<p style="display: inline;">'.$row['todo'].'</p>';
             echo '</div>';
           }
+          echo '</div>';
       }
       else{
           header("HTTP/1.1 200 OK");
@@ -156,6 +191,23 @@ if(isset($_POST['deltodo']) and isset($_SESSION['username'])){
   $stmt->bind_param("i", $todo_id);
   $stmt->execute();
   header("HTTP/1.1 201 OK");
+}
+
+if(isset($_POST['logout']) and isset($_SESSION['username'])){
+  session_destroy();
+  header("HTTP/1.1 201 OK");
+  echo "logout";
+}
+
+
+if(isset($_POST['delall']) and isset($_SESSION['username'])){
+  $user_id = strval($_SESSION['user_id']);
+  $sql_query = "DELETE FROM todo_table WHERE UserId=?";
+  $stmt= $con->prepare($sql_query);
+  $stmt->bind_param("i", $user_id);
+  $stmt->execute();
+  header("HTTP/1.1 201 OK");
+  echo "delall";
 }
 ?>
 
