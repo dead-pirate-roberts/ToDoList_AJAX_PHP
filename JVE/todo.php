@@ -1,6 +1,7 @@
 <?php
-//include 'inc/db.php'; //TODO
+include 'inc/db.php'; 
 session_start();
+
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 ?>
 <!DOCTYPE html>
@@ -8,28 +9,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 	<head>
 		<script>
 			function do_login() {
+
 				var xhttp = new XMLHttpRequest();
 				xhttp.onreadystatechange = function() {
 					if (this.readyState == 4) {
-						if (this.status == 200) {
+						if (this.status == 243) {
 							console.log('authentication successful');
-							const resp = JSON.parse(this.responseText);
-							document.getElementById('welcome_user').innerText = resp['authenticated_user'];
+
+							let parser = new DOMParser();
+							let xmlDoc = parser.parseFromString(this.response,"text/xml");
+
+							document.getElementById('welcome_user').innerText = xmlDoc.getElementsByTagName("username")[0].childNodes[0].nodeValue;
+
+							$count_todo = xmlDoc.getElementsByTagName("todos").length;
+							console.log($count_todo);
+
+
 							document.getElementById('login_div').style.display = 'none';
 							document.getElementById('main_div').style.display = 'block';
 							document.getElementById('todo_div').style.display = 'block';
+
+
 						} else {
 							document.getElementById('login_message').innerText = 'Authentication failed, try again';
 							console.log('authentication failed');
 						}
 					}
 				};
-
+				
 				xhttp.open('POST', 'todo.php', true);
-				xhttp.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
+				
 				let user = document.getElementById('user').value;
 				let pass = document.getElementById('pass').value;
-				xhttp.send(JSON.stringify({'user':user, 'pass': pass}));
+				let req = "<xml><user>"+user+"</user><pass>"+pass+"</pass></xml>";
+
+				xhttp.setRequestHeader('Content-Type', 'text/xml');
+				xhttp.send(req);
+
+				//xhttp.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
+				//xhttp.send(JSON.stringify({'user':user, 'pass': pass}));
 			}
 			
 			
@@ -84,17 +102,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
 <?php
 // API, POST Handling
+
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	// TODO: check content-type
-	$json = json_decode(file_get_contents('php://input'));
+
+	//$json = json_decode(file_get_contents('php://input'));
+	$req = file_get_contents('php://input');
+	$xml_req=simplexml_load_string($req) or die("Error: Cannot create object");
 	
-	if (isset($json->user) && isset($json->pass)) {
-		// MOCK, real db logic here:
+	if (isset($xml_req->user) && isset($xml_req->pass)) {
+
+		$sql_query = "select id as user_id from user_table where name=? and passwort=?";
+		$stmt = $con->prepare($sql_query);
+		$stmt->bind_param("ss", $xml_req->user, $xml_req->pass);
+		$stmt->execute();
+		$result = $stmt->get_result();
+		$row = $result->fetch_assoc();
+
+		if(!empty($row)){
+
+			$_SESSION['username'] = $xml_req->user;
+			$_SESSION['user_id'] = $row['user_id'];
+
+			$sql_query = "select todo, id from todo_table where UserId=?";
+			$stmt = $con->prepare($sql_query);
+			$stmt->bind_param("i", $row['user_id']);
+			$stmt->execute();
+			$result = $stmt->get_result();
+
+			$xml_resp = new SimpleXMLElement('<xml/>');
+			$xml_resp->addChild('username', $xml_req->user);
+			$xml_resp->addChild('user_id', $row['user_id']);
+			while ($row = $result->fetch_assoc()) {
+				$todos = $xml_resp->addChild('todos');
+				$todos->addChild('todo_id', $row['id']);
+				$todos->addChild('todo', $row['todo']);
+			}
+
+			header('HTTP/1.1 243 OK');
+			Header('Content-type: text/xml');
+			print($xml_resp->asXML());
+			die();
+		}
+
+
+
+
+
+
+
 		if ($json->user === 'asd' && $json->pass === 'asd') {
 			$_SESSION['username'] = $json->user;
-			header('HTTP/1.1 200 OK');
+			header('HTTP/1.1 243 OK');
 			header('Content-Type: application/json; charset=utf-8');
-			echo json_encode(['authenticated_user' => $json->user]);
+			echo json_encode(['authenticated_user' => $xml->user]);
 			die();
 		} else {
 			header('HTTP/1.1 401 unauthorized');
@@ -110,7 +171,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 			die();
 		}
 	} else {
-		header('HTTP/1.1 500 Internal Server Error');
+		header('HTTP/1.1 505 Internal Server Error');
 		die();
 	}
 } else {
@@ -118,5 +179,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 	header('HTTP/1.1 501 Not implemented');
 	die();
 }
-header('HTTP/1.1 500 Internal Server Error');
+header('HTTP/1.1 504 Internal Server Error');
 ?>
