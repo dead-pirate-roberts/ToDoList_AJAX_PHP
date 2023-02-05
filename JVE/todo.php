@@ -16,6 +16,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 					if (this.readyState == 4) {
 						if (this.status == 243) {
 
+							//create todo_list div
+							let div = document.createElement("div");
+							div.id = "todo_list";
+							document.getElementById('todo_div').appendChild(div);
+
 							let parser = new DOMParser();
 							let xmlDoc = parser.parseFromString(this.response,"text/xml");
 							document.getElementById('welcome_user').innerText = xmlDoc.getElementsByTagName("username")[0].childNodes[0].nodeValue;
@@ -37,12 +42,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 								button.innerHTML = 'X';
 								button.onclick = deltodo;
 								
-								document.getElementById('todo_div').appendChild(div);
+								document.getElementById('todo_list').appendChild(div);
 								document.getElementById(todo_id).appendChild(button);
-								//document.getElementById(todo_id).lastChild.onclick = deltodo();
-								//document.getElementById(todo_id).addEventListener("click", deltodo());
-
-
 								document.getElementById(todo_id).appendChild(parag);
 							}
 							document.getElementById('login_div').style.display = 'none';
@@ -63,9 +64,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
 				xhttp.setRequestHeader('Content-Type', 'text/xml');
 				xhttp.send(req);
-
-				//xhttp.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
-				//xhttp.send(JSON.stringify({'user':user, 'pass': pass}));
 			}
 			
 			function sendtodo() {
@@ -90,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 							button.innerHTML = 'X';
 							button.onclick = deltodo;
 							
-							document.getElementById('todo_div').appendChild(div);
+							document.getElementById('todo_list').appendChild(div);
 							document.getElementById(todo_id).appendChild(button);
 							document.getElementById(todo_id).appendChild(parag);
 
@@ -104,9 +102,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
 				xhttp.setRequestHeader('Content-Type', 'text/xml');
 				xhttp.send(req);
-
-				//xhttp.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
-				//xhttp.send(JSON.stringify({'todo':todo}));
 			}
 
 			function deltodo(click_env) {
@@ -125,6 +120,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 				xhttp.send(req);
 			}
 
+			function delall() {
+				var xhttp = new XMLHttpRequest();
+				xhttp.onreadystatechange = function() {
+				if (this.readyState == 4 && this.status == 201) {
+					$("#todo_list").remove();
+					let div = document.createElement("div");
+					div.id = "todo_list";
+					document.getElementById('todo_div').appendChild(div);	
+				}
+				};
+				let req = "<xml><delall>true</delall></xml>";
+				xhttp.open("POST", "todo.php", true);
+				xhttp.setRequestHeader('Content-Type', 'text/xml');
+				xhttp.send(req);
+			}
+
+			function logout() {
+				var xhttp = new XMLHttpRequest();
+				xhttp.onreadystatechange = function() {
+				if (this.readyState == 4 && this.status == 201) {
+					$("#todo_list").remove();
+					document.getElementById('login_div').style.display = 'block';
+					document.getElementById('main_div').style.display = 'none';
+					document.getElementById('todo_div').style.display = 'none';
+				}
+				};
+				let req = "<xml><logout>true</logout></xml>";
+				xhttp.open("POST", "todo.php", true);
+				xhttp.setRequestHeader('Content-Type', 'text/xml');
+				xhttp.send(req);
+			}
+
+
 		</script>
 	</head>
 	<body>
@@ -140,12 +168,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 			<p>Welcome,&nbsp;<label id=welcome_user>nobody</label>!</p>
 			<input id='todo_input' type='text' placeholder='To-DO eintragen'>
 			<button id='3' type='submit' onclick='sendtodo()'>-></button> <br/>
-			<button id='5' type='submit' onclick='deltodo()'>alle TO-DOs loeschen</button>
+			<button id='5' type='submit' onclick='delall()'>alle TO-DOs loeschen</button>
 			<button id='6' type='submit' onclick='logout()'>Logout</button>
 		</div>
 		<div id='todo_div' style='display:none'>
-		<ol id='todo_list'>
-		</ol>
 		</div>
 	</body>
 </html>
@@ -156,10 +182,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	// TODO: check content-type
 
-	//$json = json_decode(file_get_contents('php://input'));
 	$req = file_get_contents('php://input');
 	$xml_req=simplexml_load_string($req) or die("Error: Cannot create object");
-
 	
 	if (isset($xml_req->user) && isset($xml_req->pass)) {
 
@@ -201,7 +225,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 	} elseif (isset($_SESSION['username'])) { 		// MEMBERS ONLY from here on
 		if (isset($xml_req->todo)) {
 			
-			//insert todo
 			$user_id = strval($_SESSION['user_id']);
 			$sql_insert = "INSERT INTO todo_table(UserId, todo) VALUES (?,?)";
 			$sql_get_pkey = "SELECT LAST_INSERT_ID()";
@@ -209,7 +232,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 			$stmt->bind_param("is", $user_id, $xml_req->todo);
 			$stmt->execute();
 
-			//revceive todo_id
 			$todo_id = $con->query($sql_get_pkey);
 			$todo_id= $todo_id->fetch_assoc();
 			$todo_id = $todo_id['LAST_INSERT_ID()'];
@@ -230,6 +252,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 			$stmt->execute();
 			header("HTTP/1.1 201 OK");
 		}
+		if(isset($xml_req->logout)){
+			session_destroy();
+			header("HTTP/1.1 201 OK");
+			echo "logout";
+		}
+		if(isset($xml_req->delall)){
+			$user_id = strval($_SESSION['user_id']);
+			$sql_query = "DELETE FROM todo_table WHERE UserId=?";
+			$stmt= $con->prepare($sql_query);
+			$stmt->bind_param("i", $user_id);
+			$stmt->execute();
+			header("HTTP/1.1 201 OK");
+			echo "delall";
+		}
 	} else {	// No session
 		header('HTTP/1.1 505 Internal Server Error');
 		die();
@@ -238,5 +274,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 	header('HTTP/1.1 501 Not implemented');
 	die();
 }
-//header('HTTP/1.1 504 Internal Server Error');
 ?>
