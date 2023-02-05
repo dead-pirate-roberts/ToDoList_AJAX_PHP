@@ -7,6 +7,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 <!DOCTYPE html>
 <html>
 	<head>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
 		<script>
 
 			function do_login() {
@@ -34,11 +35,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
 								let button = document.createElement('button');
 								button.innerHTML = 'X';
-								//button.onclick = deltodo(todo_id);
+								button.onclick = deltodo;
 								
 								document.getElementById('todo_div').appendChild(div);
 								document.getElementById(todo_id).appendChild(button);
-								document.getElementById(todo_id).lastChild.onclick = deltodo;
+								//document.getElementById(todo_id).lastChild.onclick = deltodo();
 								//document.getElementById(todo_id).addEventListener("click", deltodo());
 
 
@@ -67,26 +68,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 				//xhttp.send(JSON.stringify({'user':user, 'pass': pass}));
 			}
 			
-			
 			function sendtodo() {
 				var xhttp = new XMLHttpRequest();
+				var todo = document.getElementById('todo_input').value;
 				xhttp.onreadystatechange = function() {
 					if (this.readyState == 4) {
-						if (this.status == 200) {
+						if (this.status == 222) {
 							let parser = new DOMParser();
 							let xmlDoc = parser.parseFromString(this.response,"text/xml");
+							let todo_id = xmlDoc.getElementsByTagName("todo_id")[0].textContent;
+							console.log(todo_id);
 
-							/* let list = document.getElementById('todo_list');
-							let li = document.createElement("li");
-							li.appendChild(document.createTextNode(resp['todo']));
-							list.appendChild(li); */
+							let div = document.createElement("div");
+							div.id = todo_id;
+
+							let parag = document.createElement('p');
+							parag.innerHTML = todo;
+							parag.style = "display:inline"
+
+							let button = document.createElement('button');
+							button.innerHTML = 'X';
+							button.onclick = deltodo;
+							
+							document.getElementById('todo_div').appendChild(div);
+							document.getElementById(todo_id).appendChild(button);
+							document.getElementById(todo_id).appendChild(parag);
+
 						} else {
 							// TODO ERROR HANDLING
 						}
 					}
 				};
 				xhttp.open('POST', 'todo.php', true);
-				let todo = document.getElementById('todo_input').value
 				let req = "<xml><todo>"+todo+"</todo></xml>";
 
 				xhttp.setRequestHeader('Content-Type', 'text/xml');
@@ -96,20 +109,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 				//xhttp.send(JSON.stringify({'todo':todo}));
 			}
 
-			function deltodo(todo_id) {
+			function deltodo(click_env) {
+				let todo_id = click_env.target.parentNode.id;
 				var xhttp = new XMLHttpRequest();
 				xhttp.onreadystatechange = function() {
 					if (this.readyState == 4 && this.status == 201) {
 						$("#"+todo_id).remove();
 					}
 				};
+				
+				let req = "<xml><deltodo>"+todo_id+"</deltodo></xml>";
+
 				xhttp.open("POST", "todo.php", true);
-				xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-				xhttp.send("deltodo="+todo_id);
+				xhttp.setRequestHeader('Content-Type', 'text/xml');
+				xhttp.send(req);
 			}
-
-
-
 
 		</script>
 	</head>
@@ -136,7 +150,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 	</body>
 </html>
 
-
 <?php
 // API, POST Handling
 
@@ -159,7 +172,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
 		if(!empty($row)){
 			
-			$_SESSION['username'] = $xml_req->user;
+			$_SESSION['username'] = (string)$xml_req->user;
 			$_SESSION['user_id'] = $row['user_id'];
 
 			$sql_query = "select todo, id from todo_table where UserId=?";
@@ -209,6 +222,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 			print($xml_resp->asXML());
 			die();
 		}
+		if (isset($xml_req->deltodo)){
+			$todo_id = (string)$xml_req->deltodo;
+			$sql_query = "DELETE FROM todo_table WHERE id=?";
+			$stmt= $con->prepare($sql_query);
+			$stmt->bind_param("i", $todo_id);
+			$stmt->execute();
+			header("HTTP/1.1 201 OK");
+		}
 	} else {	// No session
 		header('HTTP/1.1 505 Internal Server Error');
 		die();
@@ -217,5 +238,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 	header('HTTP/1.1 501 Not implemented');
 	die();
 }
-header('HTTP/1.1 504 Internal Server Error');
+//header('HTTP/1.1 504 Internal Server Error');
 ?>
