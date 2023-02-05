@@ -24,6 +24,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 							$count_todo = xmlDoc.getElementsByTagName("todos").length;
 							console.log($count_todo);
 
+							for (let i = 0; i < $count_todo; i++) {
+								let todo = xmlDoc.getElementsByTagName("todos")[i].childNodes[1].textContent;
+								let todo_id = xmlDoc.getElementsByTagName("todos")[i].childNodes[0].textContent;
+								console.log(todo);
+
+
+								let div = document.createElement("div");
+								div.id = todo_id;
+
+								let parag = document.createElement('p');
+								parag.innerHTML = todo;
+								parag.style = "display:inline"
+
+								let button = document.createElement('button');
+								button.innerHTML = 'X';
+								button.onclick = deltodo(todo_id);
+
+
+					
+								
+								document.getElementById('todo_div').appendChild(div);
+								document.getElementById(todo_id).appendChild(button);
+								document.getElementById(todo_id).appendChild(parag);
+								
+
+							}
 
 							document.getElementById('login_div').style.display = 'none';
 							document.getElementById('main_div').style.display = 'block';
@@ -36,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 						}
 					}
 				};
-				
+
 				xhttp.open('POST', 'todo.php', true);
 				
 				let user = document.getElementById('user').value;
@@ -74,6 +100,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 				let todo = document.getElementById('todo_input').value
 				xhttp.send(JSON.stringify({'todo':todo}));
 			}
+
+			function deltodo(todo_id) {
+				var xhttp = new XMLHttpRequest();
+				xhttp.onreadystatechange = function() {
+					if (this.readyState == 4 && this.status == 201) {
+						$("#"+todo_id).remove();
+					}
+				};
+				xhttp.open("POST", "todo.php", true);
+				xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+				xhttp.send("deltodo="+todo_id);
+			}
+
+
+
+
 		</script>
 	</head>
 	<body>
